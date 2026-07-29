@@ -517,9 +517,10 @@
       if (sel.publicUrl) {
         p('log "Paseo UI (public URL): $URL  (password: $PASSWORD)"');
       } else {
-        p('log "Paseo UI: $URL — sign in with Fly.io (org members only), then use password: $PASSWORD"',
-          'log "Need the Paseo mobile app instead? Run: sprite url update --auth public -s $NAME"');
+        p('log "Paseo UI: $URL — sign in with Fly.io (org members only), then use password: $PASSWORD"');
       }
+      p('log "Pair the mobile app or app.paseo.sh (QR + relay link, works in either auth mode):"',
+        'echo "    sprite exec -s $NAME -- paseo daemon pair"');
       if (logins.length) {
         p('log "One-time logins — run: sprite console -s $NAME, then:"');
         logins.forEach((cmd) => p(`echo "    ${cmd}"`));
