@@ -366,6 +366,14 @@
         ],
       },
       {
+        id: "access",
+        label: "Paseo URL access",
+        note: "Off = org-only: the URL 302s to Fly.io login, so the web UI works on any device after sign-in (plus Paseo's password) with nothing exposed. Only the native Paseo mobile app needs a public URL.",
+        items: [
+          { id: "publicUrl", name: "Public URL (Paseo mobile app)", method: "config" },
+        ],
+      },
+      {
         id: "pkg",
         label: "Package managers",
         items: [
@@ -454,8 +462,14 @@
       );
 
       if (npmPkgs.length) {
+        // node-pty is a paseo dependency with a native build; npm's allowScripts
+        // policy blocks install scripts unless explicitly allowed.
+        const allowScripts = [...npmPkgs, "node-pty"].join(",");
         p("# ── npm global installs ──",
-          `sprite exec -s "$NAME" -- npm install -g ${npmPkgs.join(" ")}`,
+          `sprite exec -s "$NAME" -- npm install -g --allow-scripts=${allowScripts} ${npmPkgs.join(" ")}`,
+          "# npm's global bin (nvm-managed) is only on PATH in interactive shells —",
+          "# link bins into ~/.local/bin so sprite exec and services can find them",
+          `sprite exec -s "$NAME" -- bash -c 'GBIN="$(npm prefix -g)/bin"; mkdir -p "$HOME/.local/bin"; for f in "$GBIN"/*; do b="$(basename "$f")"; case "$b" in node|npm|npx|corepack) continue;; esac; ln -sf "$f" "$HOME/.local/bin/$b"; done'`,
           "");
       }
       if (aptPkgs.length) {
@@ -478,12 +492,13 @@
 
       p(
         "# ── Paseo daemon as a boot service ──",
-        'URL="$(sprite url -s "$NAME" | tr -d \'[:space:]\')"',
+        'URL="$(sprite info -s "$NAME" 2>/dev/null | awk \'$1=="URL:"{print $2}\')"',
         'HOST="${URL#https://}"; HOST="${HOST%%/*}"',
         'sprite exec -s "$NAME" -- bash -c \'[ -f "$HOME/.paseo-password" ] || { openssl rand -hex 24 > "$HOME/.paseo-password"; chmod 600 "$HOME/.paseo-password"; }\'',
         'PASSWORD="$(sprite exec -s "$NAME" -- bash -c \'cat "$HOME/.paseo-password"\' | tr -d \'[:space:]\')"',
         'sprite exec -s "$NAME" -- bash -c "',
         "  PASEO_BIN=\\$(command -v paseo)",
+        "  [ -n \\\"\\$PASEO_BIN\\\" ] || { echo \\\"error: paseo not found on PATH\\\" >&2; exit 1; }",
         "  sprite-env services delete paseo >/dev/null 2>&1 || true",
         "  sprite-env services create paseo \\",
         "    --cmd \\\"\\$PASEO_BIN\\\" \\",
@@ -491,13 +506,20 @@
         '    --env \\"PASEO_PASSWORD=$PASSWORD,PASEO_HOSTNAMES=$HOST,PASEO_TRUSTED_PROXIES=true\\" \\',
         "    --http-port 6767",
         '"',
-        'sprite url update --auth public -s "$NAME"',
+        sel.publicUrl
+          ? '{ sprite url update --auth public -s "$NAME" 2>/dev/null; } || sprite update --url-auth public -s "$NAME"'
+          : '{ sprite url update --auth sprite -s "$NAME" 2>/dev/null; } || sprite update --url-auth sprite -s "$NAME"',
         ""
       );
 
       p("# ── Done ──",
-        'log "Sprite \'$NAME\' provisioned."',
-        'log "Paseo UI: $URL  (password: $PASSWORD)"');
+        'log "Sprite \'$NAME\' provisioned."');
+      if (sel.publicUrl) {
+        p('log "Paseo UI (public URL): $URL  (password: $PASSWORD)"');
+      } else {
+        p('log "Paseo UI: $URL — sign in with Fly.io (org members only), then use password: $PASSWORD"',
+          'log "Need the Paseo mobile app instead? Run: sprite url update --auth public -s $NAME"');
+      }
       if (logins.length) {
         p('log "One-time logins — run: sprite console -s $NAME, then:"');
         logins.forEach((cmd) => p(`echo "    ${cmd}"`));
