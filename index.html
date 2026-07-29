@@ -449,7 +449,7 @@
         'log() { printf \'\\n\\033[1;33m==> %s\\033[0m\\n\' "$*"; }',
         "",
         "# ── Create sprite ──",
-        'if sprite list | grep -qw "$NAME"; then log "Sprite \'$NAME\' exists, reusing"; else log "Creating \'$NAME\'"; sprite create "$NAME"; fi',
+        'if sprite list | grep -qw "$NAME"; then log "Sprite \'$NAME\' exists, reusing"; else log "Creating \'$NAME\'"; sprite create --skip-console "$NAME"; fi',
         ""
       );
 
@@ -481,7 +481,7 @@
         'URL="$(sprite url -s "$NAME" | tr -d \'[:space:]\')"',
         'HOST="${URL#https://}"; HOST="${HOST%%/*}"',
         'sprite exec -s "$NAME" -- bash -c \'[ -f "$HOME/.paseo-password" ] || { openssl rand -hex 24 > "$HOME/.paseo-password"; chmod 600 "$HOME/.paseo-password"; }\'',
-        'PASSWORD="$(sprite exec -s "$NAME" -- cat \'$HOME/.paseo-password\' | tr -d \'[:space:]\')"',
+        'PASSWORD="$(sprite exec -s "$NAME" -- bash -c \'cat "$HOME/.paseo-password"\' | tr -d \'[:space:]\')"',
         'sprite exec -s "$NAME" -- bash -c "',
         "  PASEO_BIN=\\$(command -v paseo)",
         "  sprite-env services delete paseo >/dev/null 2>&1 || true",
