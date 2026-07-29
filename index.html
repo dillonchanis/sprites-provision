@@ -1,0 +1,646 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Sprite Kit Builder</title>
+  <style>
+    :root {
+      --bg: #090909;
+      --text: #f5f5f5;
+      --muted: #a3a3a3;
+      --faint: #666;
+      --line: #1f1f1f;
+      --control-border: #262626;
+      --control-hover: #525252;
+      --focus: #737373;
+      --selected-bg: #f5f5f5;
+      --selected-text: #000;
+      --horizon: #525252;
+      --horizon-strong: #737373;
+      --section-highlight: rgba(255,255,255,.055);
+      --script-bg: #101010;
+      --log: #d4d4d4;
+      --mono: ui-monospace, "SF Mono", "Cascadia Code", Menlo, Consolas, monospace;
+      --sans: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+    }
+    [data-theme="light"] {
+      --bg: #fafafa;
+      --text: #111;
+      --muted: #666;
+      --faint: #8a8a8a;
+      --line: #e6e6e6;
+      --control-border: #d4d4d4;
+      --control-hover: #a3a3a3;
+      --focus: #737373;
+      --selected-bg: #111;
+      --selected-text: #fff;
+      --horizon: #9a9a9a;
+      --horizon-strong: #666;
+      --section-highlight: rgba(0,0,0,.055);
+      --script-bg: #efefef;
+      --log: #333;
+    }
+
+    * { box-sizing: border-box; }
+    html { background: var(--bg); }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--sans);
+      -webkit-font-smoothing: antialiased;
+      text-rendering: optimizeLegibility;
+      transition: background .18s ease, color .18s ease;
+    }
+    button, input { font: inherit; }
+    button { background: none; border: 0; color: inherit; }
+
+    header {
+      position: relative;
+      border-bottom: 1px solid var(--line);
+      padding: 44px 24px 34px;
+    }
+    .header-inner {
+      max-width: 1152px;
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      gap: 18px;
+    }
+    .theme-toggle {
+      position: absolute;
+      top: 24px;
+      right: 24px;
+      cursor: pointer;
+      color: var(--muted);
+      font-family: var(--mono);
+      font-size: 12px;
+      transition: color .16s ease;
+    }
+    .theme-toggle:hover { color: var(--text); }
+    .invader {
+      margin: 0;
+      color: var(--muted);
+      font-family: var(--mono);
+      font-size: 10px;
+      line-height: 1;
+      letter-spacing: 0;
+      white-space: pre;
+    }
+    h1 {
+      margin: 0;
+      font-size: clamp(30px, 4vw, 44px);
+      line-height: 1;
+      font-weight: 600;
+      letter-spacing: -.045em;
+    }
+
+    main {
+      max-width: 1152px;
+      margin: 0 auto;
+      padding: 0 24px;
+      display: grid;
+      gap: 0;
+    }
+    section, aside { min-width: 0; }
+    section {
+      border-bottom: 1px solid var(--line);
+      padding: 28px 0;
+    }
+    .label {
+      margin: 0 0 12px;
+      color: var(--muted);
+      font-family: var(--mono);
+      font-size: 12px;
+      font-weight: 500;
+      letter-spacing: .18em;
+      text-transform: uppercase;
+    }
+    .row { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+    .copy {
+      cursor: pointer;
+      color: var(--muted);
+      font-family: var(--mono);
+      font-size: 12px;
+      transition: color .16s ease;
+    }
+    .copy:hover { color: var(--text); }
+    code.command {
+      display: block;
+      overflow-x: auto;
+      white-space: nowrap;
+      color: var(--text);
+      font-family: var(--mono);
+      font-size: 14px;
+    }
+    input {
+      width: 100%;
+      border: 1px solid var(--control-border);
+      border-radius: 6px;
+      background: transparent;
+      color: var(--text);
+      outline: none;
+      padding: 8px 12px;
+      font-family: var(--mono);
+      font-size: 14px;
+      transition: border-color .16s ease;
+    }
+    input::placeholder { color: var(--faint); }
+    input:focus { border-color: var(--focus); }
+
+    .cat-head {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: baseline;
+      gap: 4px 16px;
+      margin-bottom: 16px;
+    }
+    .cat-head h2 {
+      margin: 0;
+      color: var(--text);
+      font-size: 14px;
+      font-weight: 500;
+      letter-spacing: -.01em;
+    }
+    .note { margin: 0; color: var(--faint); font-size: 12px; line-height: 20px; }
+    .items { display: flex; flex-wrap: wrap; gap: 8px; }
+    .item {
+      cursor: pointer;
+      border: 1px solid var(--control-border);
+      border-radius: 999px;
+      color: var(--muted);
+      padding: 4px 10px;
+      font-family: var(--mono);
+      font-size: 12px;
+      transition: border-color .16s ease, color .16s ease, background .16s ease;
+    }
+    .item:hover:not(:disabled) { border-color: var(--control-hover); color: var(--text); }
+    .item:focus-visible { outline: 1px solid var(--focus); outline-offset: 2px; }
+    .item.on { border-color: var(--selected-bg); background: var(--selected-bg); color: var(--selected-text); }
+    .item:disabled { cursor: default; border-color: var(--line); color: var(--faint); }
+    .item .included { margin-left: 4px; color: var(--faint); }
+
+    aside { border-top: 1px solid var(--line); }
+    .script-wrap { padding: 28px 0; }
+    .script-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      margin-bottom: 16px;
+    }
+    .filename {
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      color: var(--muted);
+      font-family: var(--mono);
+      font-size: 12px;
+    }
+    .actions { display: flex; gap: 16px; }
+    pre {
+      margin: 0;
+      max-height: 76vh;
+      overflow: auto;
+      padding: 16px;
+      border-radius: 8px;
+      background: var(--script-bg);
+      font-family: var(--mono);
+      font-size: 12px;
+      line-height: 24px;
+    }
+    pre.invader {
+      max-height: none;
+      overflow: visible;
+      padding: 0;
+      border-radius: 0;
+      background: transparent;
+      font-size: 10px;
+      line-height: 1;
+    }
+    pre div {
+      min-height: 24px;
+      margin: 0 -8px;
+      padding: 0 8px;
+      border-radius: 4px;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+    .ln-section { background: var(--section-highlight); color: var(--text); font-weight: 500; }
+    .ln-shebang { color: var(--text); font-weight: 500; }
+    .ln-comment { color: var(--faint); }
+    .ln-log { color: var(--log); }
+    .ln-default { color: var(--muted); }
+
+    footer {
+      grid-column: 1 / -1;
+      border-top: 1px solid var(--line);
+      margin-top: 8px;
+      padding: 28px 0 76px;
+    }
+    footer p {
+      margin: 0;
+      max-width: 760px;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 22px;
+    }
+    footer code {
+      color: var(--text);
+      font-family: var(--mono);
+      font-size: 12px;
+    }
+
+    @media (min-width: 1024px) {
+      main { grid-template-columns: minmax(0, .92fr) minmax(0, 1.08fr); }
+      .left { padding-right: 48px; }
+      aside { border-top: 0; border-left: 1px solid var(--line); padding-left: 48px; }
+      .script-wrap { position: sticky; top: 0; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <button class="theme-toggle" id="themeToggle" type="button" aria-label="Toggle light and dark mode">light</button>
+    <div class="header-inner">
+      <pre class="invader" aria-hidden="true">  #     #
+ ###   ###
+###########
+## ##### ##
+###########
+ # #   # #
+  ##   ##</pre>
+      <h1>Sprite Kit Builder</h1>
+    </div>
+  </header>
+
+  <main>
+    <div class="left">
+      <section>
+        <div class="row">
+          <p class="label">Install sprite CLI</p>
+          <button class="copy" id="copyInstall" type="button">copy</button>
+        </div>
+        <code class="command">$ curl https://sprites.dev/install.sh | bash</code>
+      </section>
+
+      <section>
+        <label class="label" for="spriteName">Sprite name</label>
+        <input id="spriteName" value="personal" placeholder="personal" autocomplete="off" spellcheck="false" />
+      </section>
+
+      <div id="catalog"></div>
+    </div>
+
+    <aside>
+      <div class="script-wrap">
+        <div class="script-head">
+          <p class="filename" id="filename">provision-personal.sh</p>
+          <div class="actions">
+            <button class="copy" id="copyScript" type="button">copy</button>
+            <button class="copy" id="downloadScript" type="button">download</button>
+          </div>
+        </div>
+        <pre id="preview" aria-label="Generated provisioning script"></pre>
+      </div>
+    </aside>
+
+    <footer>
+      <p>
+        To run the generated script, download it, make it executable, then pass a sprite name if you want to override
+        the default: <code id="runCommand">chmod +x provision-personal.sh && ./provision-personal.sh my-sprite</code>. Run it anywhere
+        the <code>sprite</code> CLI is installed and authenticated.
+      </p>
+    </footer>
+  </main>
+
+  <script>
+    const CATALOG = [
+      {
+        id: "agents",
+        label: "Coding agents",
+        note: "Each needs a one-time login inside the sprite afterward.",
+        items: [
+          { id: "claude", name: "Claude Code", method: "npm", pkg: "@anthropic-ai/claude-code", login: "claude", default: true },
+          { id: "codex", name: "Codex", method: "npm", pkg: "@openai/codex", login: "codex" },
+          { id: "gemini", name: "Gemini CLI", method: "npm", pkg: "@google/gemini-cli", login: "gemini" },
+          { id: "opencode", name: "OpenCode", method: "npm", pkg: "opencode-ai", login: "opencode auth login" },
+          { id: "copilot", name: "Copilot CLI", method: "npm", pkg: "@github/copilot", login: "copilot" },
+          { id: "aider", name: "Aider", method: "curl", login: "aider (set API key env)", lines: [
+            "# Aider (installs uv first if missing)",
+            "command -v uv >/dev/null || curl -LsSf https://astral.sh/uv/install.sh | sh",
+            'export PATH="$HOME/.local/bin:$PATH"',
+            "uv tool install aider-chat",
+          ]},
+          { id: "kimi", name: "Kimi CLI", method: "curl", login: "kimi (device login)", lines: [
+            "# Kimi CLI via uv — check https://github.com/MoonshotAI/kimi-cli if this drifts",
+            "command -v uv >/dev/null || curl -LsSf https://astral.sh/uv/install.sh | sh",
+            'export PATH="$HOME/.local/bin:$PATH"',
+            "uv tool install kimi-cli",
+          ]},
+        ],
+      },
+      {
+        id: "git",
+        label: "Git hosting",
+        note: "Paseo uses gh for PR-aware worktrees — keep it unless you're GitLab-only.",
+        items: [
+          { id: "gh", name: "GitHub CLI (gh)", method: "curl", login: "gh auth login", default: true, lines: [
+            "# GitHub CLI",
+            "if ! command -v gh >/dev/null 2>&1; then",
+            "  sudo mkdir -p -m 755 /etc/apt/keyrings",
+            "  wget -qO- https://cli.github.com/packages/githubcli-archive-keyring.gpg | sudo tee /etc/apt/keyrings/githubcli-archive-keyring.gpg >/dev/null",
+            '  echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" | sudo tee /etc/apt/sources.list.d/github-cli.list >/dev/null',
+            "  sudo apt-get update -qq && sudo apt-get install -y gh",
+            "fi",
+          ]},
+          { id: "glab", name: "GitLab CLI (glab)", method: "curl", login: "glab auth login", lines: [
+            "# GitLab CLI (binary from GitLab releases)",
+            "if ! command -v glab >/dev/null 2>&1; then",
+            "  curl -fsSL https://gitlab.com/gitlab-org/cli/-/releases/permalink/latest/downloads/glab_linux_amd64.deb -o /tmp/glab.deb && sudo dpkg -i /tmp/glab.deb",
+            "fi",
+          ]},
+        ],
+      },
+      {
+        id: "pkg",
+        label: "Package managers",
+        items: [
+          { id: "npm", name: "npm", method: "pre" },
+          { id: "pnpm", name: "pnpm", method: "npm", pkg: "pnpm", default: true },
+          { id: "yarn", name: "Yarn", method: "npm", pkg: "yarn" },
+          { id: "bun", name: "Bun", method: "curl", lines: [
+            "# Bun",
+            "command -v bun >/dev/null || curl -fsSL https://bun.sh/install | bash",
+          ]},
+        ],
+      },
+      {
+        id: "runtimes",
+        label: "Runtimes",
+        items: [
+          { id: "node", name: "Node.js", method: "pre" },
+          { id: "python", name: "Python", method: "pre" },
+          { id: "go", name: "Go", method: "pre" },
+          { id: "rust", name: "Rust (rustup)", method: "curl", lines: [
+            "# Rust",
+            "command -v cargo >/dev/null || curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y",
+          ]},
+          { id: "deno", name: "Deno", method: "curl", lines: [
+            "# Deno",
+            "command -v deno >/dev/null || curl -fsSL https://deno.land/install.sh | sh -s -- -y",
+          ]},
+          { id: "elixir", name: "Elixir", method: "apt", pkg: "elixir" },
+        ],
+      },
+      {
+        id: "data",
+        label: "Databases",
+        note: "Installed only — create a sprite-env service if you want them running at boot.",
+        items: [
+          { id: "sqlite", name: "SQLite", method: "pre" },
+          { id: "postgres", name: "PostgreSQL", method: "apt", pkg: "postgresql" },
+          { id: "redis", name: "Redis", method: "apt", pkg: "redis-server" },
+        ],
+      },
+      {
+        id: "tools",
+        label: "Shell tools",
+        items: [
+          { id: "tmux", name: "tmux", method: "apt", pkg: "tmux", default: true },
+          { id: "ripgrep", name: "ripgrep", method: "apt", pkg: "ripgrep", default: true },
+          { id: "fzf", name: "fzf", method: "apt", pkg: "fzf" },
+          { id: "jq", name: "jq", method: "apt", pkg: "jq", default: true },
+          { id: "just", name: "just", method: "apt", pkg: "just" },
+          { id: "direnv", name: "direnv", method: "apt", pkg: "direnv" },
+          { id: "htop", name: "htop", method: "apt", pkg: "htop" },
+        ],
+      },
+    ];
+
+    const ALL_ITEMS = CATALOG.flatMap((c) => c.items);
+    const defaultSelection = () => {
+      const s = {};
+      ALL_ITEMS.forEach((i) => { if (i.default) s[i.id] = true; });
+      return s;
+    };
+
+    function buildScript(name, sel) {
+      const picked = ALL_ITEMS.filter((i) => sel[i.id] && i.method !== "pre");
+      const npmPkgs = picked.filter((i) => i.method === "npm").map((i) => i.pkg);
+      const aptPkgs = picked.filter((i) => i.method === "apt").map((i) => i.pkg);
+      const curlBlocks = picked.filter((i) => i.method === "curl");
+      const logins = ALL_ITEMS.filter((i) => sel[i.id] && i.login).map((i) => i.login).filter(Boolean);
+      npmPkgs.unshift("@getpaseo/cli");
+
+      const L = [];
+      const p = (...lines) => L.push(...lines);
+
+      p(
+        "#!/usr/bin/env bash",
+        `# provision-${name}.sh — generated by Sprite Kit Builder`,
+        "# Requires the sprite CLI: curl -fsSL https://sprites.dev/install.sh | sh && sprite org auth",
+        "set -euo pipefail",
+        "",
+        `NAME="\${1:-${name}}"`,
+        'log() { printf \'\\n\\033[1;33m==> %s\\033[0m\\n\' "$*"; }',
+        "",
+        "# ── Create sprite ──",
+        'if sprite list | grep -qw "$NAME"; then log "Sprite \'$NAME\' exists, reusing"; else log "Creating \'$NAME\'"; sprite create "$NAME"; fi',
+        ""
+      );
+
+      if (npmPkgs.length) {
+        p("# ── npm global installs ──",
+          `sprite exec -s "$NAME" -- npm install -g ${npmPkgs.join(" ")}`,
+          "");
+      }
+      if (aptPkgs.length) {
+        p("# ── apt installs ──",
+          `sprite exec -s "$NAME" -- bash -c "sudo apt-get update -qq && sudo apt-get install -y ${aptPkgs.join(" ")}"`,
+          "");
+      }
+      curlBlocks.forEach((b) => {
+        p(`sprite exec -s "$NAME" -- bash -c '`);
+        (b.lines || []).forEach((ln) => p("  " + ln.replace(/'/g, `'"'"'`)));
+        p("'", "");
+      });
+
+      if (sel.postgres || sel.redis) {
+        p("# Optional: run databases as boot services (uncomment inside `sprite console`):");
+        if (sel.postgres) p('#   sprite-env services create postgres --cmd /usr/lib/postgresql/16/bin/postgres --args "-D,$HOME/pgdata"');
+        if (sel.redis) p('#   sprite-env services create redis --cmd redis-server');
+        p("");
+      }
+
+      p(
+        "# ── Paseo daemon as a boot service ──",
+        'URL="$(sprite url -s "$NAME" | tr -d \'[:space:]\')"',
+        'HOST="${URL#https://}"; HOST="${HOST%%/*}"',
+        'sprite exec -s "$NAME" -- bash -c \'[ -f "$HOME/.paseo-password" ] || { openssl rand -hex 24 > "$HOME/.paseo-password"; chmod 600 "$HOME/.paseo-password"; }\'',
+        'PASSWORD="$(sprite exec -s "$NAME" -- cat \'$HOME/.paseo-password\' | tr -d \'[:space:]\')"',
+        'sprite exec -s "$NAME" -- bash -c "',
+        "  PASEO_BIN=\\$(command -v paseo)",
+        "  sprite-env services delete paseo >/dev/null 2>&1 || true",
+        "  sprite-env services create paseo \\",
+        "    --cmd \\\"\\$PASEO_BIN\\\" \\",
+        "    --args 'daemon,start,--web-ui,--listen,0.0.0.0:6767' \\",
+        '    --env \\"PASEO_PASSWORD=$PASSWORD,PASEO_HOSTNAMES=$HOST,PASEO_TRUSTED_PROXIES=true\\" \\',
+        "    --http-port 6767",
+        '"',
+        'sprite url update --auth public -s "$NAME"',
+        ""
+      );
+
+      p("# ── Done ──",
+        'log "Sprite \'$NAME\' provisioned."',
+        'log "Paseo UI: $URL  (password: $PASSWORD)"');
+      if (logins.length) {
+        p('log "One-time logins — run: sprite console -s $NAME, then:"');
+        logins.forEach((cmd) => p(`echo "    ${cmd}"`));
+        p('echo "    git config --global user.name  \\"Your Name\\""',
+          'echo "    git config --global user.email \\"you@example.com\\""');
+      }
+      return L.join("\n");
+    }
+
+    function lineClass(ln) {
+      const t = ln.trim();
+      if (t.startsWith("# ──")) return "ln-section";
+      if (t.startsWith("#!")) return "ln-shebang";
+      if (t.startsWith("#")) return "ln-comment";
+      if (t.startsWith("log ") || t.startsWith("echo ")) return "ln-log";
+      return "ln-default";
+    }
+
+    const state = { name: "personal", sel: defaultSelection() };
+    const catalogEl = document.getElementById("catalog");
+    const previewEl = document.getElementById("preview");
+    const filenameEl = document.getElementById("filename");
+    const nameEl = document.getElementById("spriteName");
+    const copyInstallEl = document.getElementById("copyInstall");
+    const copyScriptEl = document.getElementById("copyScript");
+    const downloadScriptEl = document.getElementById("downloadScript");
+    const themeToggleEl = document.getElementById("themeToggle");
+    const runCommandEl = document.getElementById("runCommand");
+    const installCommand = "curl https://sprites.dev/install.sh | bash";
+
+    function applyTheme(theme) {
+      document.documentElement.dataset.theme = theme;
+      themeToggleEl.textContent = theme === "dark" ? "light" : "dark";
+      try { localStorage.setItem("sprite-kit-theme", theme); } catch {}
+    }
+    const initialTheme = (() => {
+      try {
+        const saved = localStorage.getItem("sprite-kit-theme");
+        if (saved === "light" || saved === "dark") return saved;
+      } catch {}
+      return window.matchMedia && window.matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark";
+    })();
+    applyTheme(initialTheme);
+
+    const safeName = () => state.name.trim() || "my-sprite";
+    const script = () => buildScript(safeName(), state.sel);
+
+    function renderCatalog() {
+      catalogEl.textContent = "";
+      CATALOG.forEach((cat) => {
+        const section = document.createElement("section");
+
+        const head = document.createElement("div");
+        head.className = "cat-head";
+        const h2 = document.createElement("h2");
+        h2.textContent = cat.label;
+        head.appendChild(h2);
+        if (cat.note) {
+          const note = document.createElement("p");
+          note.className = "note";
+          note.textContent = cat.note;
+          head.appendChild(note);
+        }
+        section.appendChild(head);
+
+        const items = document.createElement("div");
+        items.className = "items";
+        cat.items.forEach((item) => {
+          const pre = item.method === "pre";
+          const on = pre || !!state.sel[item.id];
+          const btn = document.createElement("button");
+          btn.type = "button";
+          btn.className = "item" + (on && !pre ? " on" : "");
+          btn.disabled = pre;
+          btn.title = pre ? "Preinstalled on every Sprite" : (item.pkg || item.login || item.name);
+          btn.textContent = item.name;
+          if (pre) {
+            const included = document.createElement("span");
+            included.className = "included";
+            included.textContent = "included";
+            btn.appendChild(included);
+          }
+          btn.addEventListener("click", () => {
+            state.sel[item.id] = !state.sel[item.id];
+            render();
+          });
+          items.appendChild(btn);
+        });
+        section.appendChild(items);
+        catalogEl.appendChild(section);
+      });
+    }
+
+    function renderScript() {
+      const file = `provision-${safeName()}.sh`;
+      filenameEl.textContent = file;
+      runCommandEl.textContent = `chmod +x ${file} && ./${file} my-sprite`;
+      previewEl.textContent = "";
+      script().split("\n").forEach((ln) => {
+        const div = document.createElement("div");
+        div.className = lineClass(ln);
+        div.textContent = ln || " ";
+        previewEl.appendChild(div);
+      });
+    }
+
+    function render() {
+      renderCatalog();
+      renderScript();
+    }
+
+    async function copyText(text, button) {
+      const old = button.textContent;
+      try {
+        await navigator.clipboard.writeText(text);
+        button.textContent = "copied";
+        setTimeout(() => { button.textContent = old; }, 1400);
+      } catch {
+        /* clipboard unavailable — user can select text manually */
+      }
+    }
+
+    nameEl.addEventListener("input", (e) => {
+      state.name = e.target.value.replace(/[^a-zA-Z0-9-_]/g, "-");
+      if (e.target.value !== state.name) e.target.value = state.name;
+      renderScript();
+    });
+    copyInstallEl.addEventListener("click", () => copyText(installCommand, copyInstallEl));
+    copyScriptEl.addEventListener("click", () => copyText(script(), copyScriptEl));
+    downloadScriptEl.addEventListener("click", () => {
+      const blob = new Blob([script()], { type: "text/x-shellscript" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `provision-${safeName()}.sh`;
+      a.click();
+      URL.revokeObjectURL(url);
+    });
+    themeToggleEl.addEventListener("click", () => {
+      applyTheme(document.documentElement.dataset.theme === "dark" ? "light" : "dark");
+    });
+
+    render();
+  </script>
+</body>
+</html>
