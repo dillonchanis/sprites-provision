@@ -333,8 +333,9 @@
         Download the script, then in Terminal (from your Downloads folder):
         <code id="runCommand">chmod +x provision-personal.sh && ./provision-personal.sh</code>.
         It is safe to run again later — reruns update your existing sprite instead of creating a new one.
-        When it finishes, it prints your <strong>Paseo link and password</strong>: open the link on any device, sign in
-        with Fly.io, and enter the password. For the phone app, run the pairing command it prints and scan the QR code.
+        When it finishes, it prints your <strong>Paseo link and the exact connection details</strong> (host, port,
+        password): open the link on any device, sign in with Fly.io, click “Direct connection”, and enter those values.
+        For the phone app, run the pairing command it prints and scan the QR code.
         Last step: run <code>sprite console -s &lt;name&gt;</code> once and sign in to each agent you installed
         (e.g. type <code>claude</code> and follow the prompts), so your agents can act as you.
       </p>
@@ -543,12 +544,19 @@
       p("# ── Done ──",
         'log "Sprite \'$NAME\' provisioned."');
       if (sel.publicUrl) {
-        p('log "Paseo UI (public URL): $URL  (password: $PASSWORD)"');
+        p('log "Open Paseo in your browser: $URL"');
       } else {
-        p('log "Paseo UI: $URL — sign in with Fly.io (org members only), then use password: $PASSWORD"');
+        p('log "Open Paseo in your browser: $URL"',
+          'echo "    (sign in with Fly.io first — org members only)"');
       }
-      p('log "Pair the mobile app or app.paseo.sh (QR + relay link, works in either auth mode):"',
-        'echo "    sprite exec -s $NAME -- paseo daemon pair"');
+      p('echo "    On the welcome screen, click \\"Direct connection\\" and enter:"',
+        'echo "      Host:     $HOST"',
+        'echo "      Port:     443"',
+        'echo "      SSL/TLS:  on"',
+        'echo "      Password: $PASSWORD"');
+      p('log "On your phone: pair the Paseo mobile app (or app.paseo.sh) by running:"',
+        'echo "    sprite exec -s $NAME -- paseo daemon pair"',
+        'echo "    then scan the QR code and enter the same password."');
       if (logins.length) {
         p('log "One-time logins — run: sprite console -s $NAME, then:"');
         logins.forEach((cmd) => p(`echo "    ${cmd}"`));
@@ -613,10 +621,11 @@
         `3. Save the script below as provision-${name}.sh, then run:`,
         `   chmod +x provision-${name}.sh && ./provision-${name}.sh`,
         "   It is safe to re-run if it fails partway.",
-        "4. When it finishes it prints a Paseo URL and password. I open the URL in a browser, sign in with",
-        '   Fly.io, choose "Direct connection", and enter the password.',
+        '4. When it finishes it prints a Paseo URL plus the exact "Direct connection" details (host, port 443,',
+        "   SSL on, password). I open the URL in a browser, sign in with Fly.io, click Direct connection, and",
+        "   enter those values.",
         `5. For my phone: run \`sprite exec -s ${name} -- paseo daemon pair\` and I scan the QR code with the`,
-        "   Paseo app (or open the printed link).",
+        "   Paseo app (or open the printed link), then enter the same password.",
         `6. One-time agent sign-ins: \`sprite console -s ${name}\`, then run each login command the script`,
         "   printed at the end (e.g. `claude`), and set my git name and email.",
         "",
