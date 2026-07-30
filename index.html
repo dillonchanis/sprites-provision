@@ -167,6 +167,25 @@
     }
     .note { margin: 0; color: var(--faint); font-size: 12px; line-height: 20px; }
     .hint { margin: 10px 0 0; color: var(--faint); font-size: 12px; line-height: 20px; }
+    .callout {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px 24px;
+      margin-top: 16px;
+      padding: 14px 16px;
+      border: 1px solid var(--control-border);
+      border-radius: 8px;
+      background: var(--section-highlight);
+    }
+    .callout-title {
+      margin: 0 0 4px;
+      color: var(--text);
+      font-size: 13px;
+      font-weight: 500;
+      letter-spacing: -.01em;
+    }
+    .callout .note { max-width: 372px; }
     .items { display: flex; flex-wrap: wrap; gap: 8px; }
     .item {
       cursor: pointer;
@@ -321,8 +340,11 @@
           </div>
         </div>
         <pre id="preview" aria-label="Generated provisioning script"></pre>
-        <div class="row" style="margin-top: 16px">
-          <p class="note">Prefer a guide? Copy a ready-made prompt, paste it into Claude, and it will walk you through every step.</p>
+        <div class="callout">
+          <div>
+            <p class="callout-title">Prefer a guide?</p>
+            <p class="note">Copy a ready-made prompt, paste it into Claude, and it will walk you through every step.</p>
+          </div>
           <button class="copy" id="copyPrompt" type="button">copy&nbsp;prompt</button>
         </div>
       </div>
