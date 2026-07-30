@@ -91,7 +91,7 @@
     }
     h1 {
       margin: 0;
-      font-size: clamp(30px, 4vw, 44px);
+      font-size: clamp(30px, 4vw, 32px);
       line-height: 1;
       font-weight: 600;
       letter-spacing: -.045em;
@@ -240,7 +240,7 @@
       padding: 0;
       border-radius: 0;
       background: transparent;
-      font-size: 10px;
+      font-size: 6px;
       line-height: 1;
     }
     pre div {
@@ -278,6 +278,7 @@
 
     @media (min-width: 1024px) {
       main { grid-template-columns: minmax(0, .92fr) minmax(0, 1.08fr); }
+      .header-inner { padding: 0 24px; }
       .left { padding-right: 48px; }
       aside { border-top: 0; border-left: 1px solid var(--line); padding-left: 48px; }
       .script-wrap { position: sticky; top: 0; }
