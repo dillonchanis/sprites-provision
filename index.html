@@ -387,9 +387,10 @@
         <div>
           <h3>What about my phone?</h3>
           <p>
-            Run the pairing command the script prints — <code>sprite exec -s &lt;name&gt; -- paseo daemon pair</code> —
-            then scan the QR code with the Paseo app and enter the same password. Add the web UI to your home
-            screen and it feels like a native app.
+            Run the pairing command the script prints — <code>sprite exec --tty -s &lt;name&gt; -- paseo daemon pair</code> —
+            then scan the QR code with the Paseo app and enter the same password. No QR? Widen your terminal
+            window, or open the pairing link it prints instead. Add the web UI to your home screen and it feels
+            like a native app.
           </p>
         </div>
         <div>
@@ -570,8 +571,9 @@
         '  echo "      SSL/TLS:  on"',
         '  echo "      Password: $PASSWORD"',
         '  log "On your phone: pair the Paseo mobile app (or app.paseo.sh) by running:"',
-        '  echo "    sprite exec -s $NAME -- paseo daemon pair"',
+        '  echo "    sprite exec --tty -s $NAME -- paseo daemon pair"',
         '  echo "    then scan the QR code and enter the same password."',
+        '  echo "    (No QR? Widen your terminal to 70+ columns, or open the printed pairing link.)"',
         "}",
         "",
         "# ── Preflight ──",
@@ -713,8 +715,9 @@
         '4. When it finishes it prints a Paseo URL plus the exact "Direct connection" details (host, port 443,',
         "   SSL on, password). I open the URL in a browser, sign in with Fly.io, click Direct connection, and",
         "   enter those values.",
-        `5. For my phone: run \`sprite exec -s ${name} -- paseo daemon pair\` and I scan the QR code with the`,
-        "   Paseo app (or open the printed link), then enter the same password.",
+        `5. For my phone: run \`sprite exec --tty -s ${name} -- paseo daemon pair\` and I scan the QR code with`,
+        "   the Paseo app (or open the printed link), then enter the same password. The QR needs a terminal",
+        "   at least 70 columns wide.",
         `6. One-time agent sign-ins: \`sprite console -s ${name}\`, then run each login command the script`,
         "   printed at the end (e.g. `claude`), and set my git name and email.",
         `7. If I ever lose the connection details, \`./provision-${name}.sh info\` prints them again without`,
