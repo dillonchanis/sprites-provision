@@ -263,9 +263,20 @@
       margin-top: 8px;
       padding: 28px 0 76px;
     }
-    footer p {
+    .faq {
+      display: grid;
+      gap: 28px 48px;
+    }
+    .faq h3 {
+      margin: 0 0 6px;
+      color: var(--text);
+      font-size: 13px;
+      font-weight: 500;
+      letter-spacing: -.01em;
+    }
+    .faq p {
       margin: 0;
-      max-width: 760px;
+      max-width: 520px;
       color: var(--muted);
       font-size: 13px;
       line-height: 22px;
@@ -274,6 +285,9 @@
       color: var(--text);
       font-family: var(--mono);
       font-size: 12px;
+    }
+    @media (min-width: 720px) {
+      .faq { grid-template-columns: 1fr 1fr; }
     }
 
     @media (min-width: 1024px) {
@@ -352,16 +366,55 @@
     </aside>
 
     <footer>
-      <p>
-        Download the script, then in Terminal (from your Downloads folder):
-        <code id="runCommand">chmod +x provision-personal.sh && ./provision-personal.sh</code>.
-        It is safe to run again later — reruns update your existing sprite instead of creating a new one.
-        When it finishes, it prints your <strong>Paseo link and the exact connection details</strong> (host, port,
-        password): open the link on any device, sign in with Fly.io, click “Direct connection”, and enter those values.
-        For the phone app, run the pairing command it prints and scan the QR code.
-        Last step: run <code>sprite console -s &lt;name&gt;</code> once and sign in to each agent you installed
-        (e.g. type <code>claude</code> and follow the prompts), so your agents can act as you.
-      </p>
+      <p class="label" style="margin-bottom: 24px">FAQ</p>
+      <div class="faq">
+        <div>
+          <h3>How do I run the script?</h3>
+          <p>
+            Download it, then in Terminal (from your Downloads folder):
+            <code id="runCommand">chmod +x provision-personal.sh && ./provision-personal.sh</code>.
+            It is safe to run again later — reruns update your existing sprite instead of creating a new one.
+          </p>
+        </div>
+        <div>
+          <h3>How do I connect once it finishes?</h3>
+          <p>
+            The script ends by printing your <strong>Paseo link and the exact connection details</strong>.
+            Open the link on any device, sign in with Fly.io, click “Direct connection”, and enter the host,
+            port, and password it printed.
+          </p>
+        </div>
+        <div>
+          <h3>What about my phone?</h3>
+          <p>
+            Run the pairing command the script prints — <code>sprite exec -s &lt;name&gt; -- paseo daemon pair</code> —
+            then scan the QR code with the Paseo app and enter the same password. Add the web UI to your home
+            screen and it feels like a native app.
+          </p>
+        </div>
+        <div>
+          <h3>Why do the agents ask me to sign in?</h3>
+          <p>
+            Each agent needs a one-time login so it can act as you. Run <code>sprite console -s &lt;name&gt;</code>
+            once, type each agent's login command (e.g. <code>claude</code>) and follow the prompts, then set your
+            git name and email.
+          </p>
+        </div>
+        <div>
+          <h3>I lost my connection details.</h3>
+          <p>
+            Run <code>./provision-&lt;name&gt;.sh info</code> — it reprints the Paseo link, host, port, password,
+            and the phone-pairing command in seconds, without reinstalling anything.
+          </p>
+        </div>
+        <div>
+          <h3>Something went wrong.</h3>
+          <p>
+            Copy the “copy prompt” guide above into Claude along with the error you saw — it will walk you through
+            fixing it. Rerunning the script is always safe.
+          </p>
+        </div>
+      </div>
     </footer>
   </main>
 
@@ -504,9 +557,34 @@
         'log() { printf \'\\n\\033[1;33m==> %s\\033[0m\\n\' "$*"; }',
         'fail() { printf \'\\n\\033[1;31m%s\\033[0m\\n\' "$*" >&2; exit 1; }',
         "",
+        "connection_info() {",
+        '  URL="$(sprite info -s "$NAME" 2>/dev/null | awk \'$1=="URL:"{print $2}\')"',
+        '  HOST="${URL#https://}"; HOST="${HOST%%/*}"',
+        '  PASSWORD="$(sprite exec -s "$NAME" -- bash -c \'cat "$HOME/.paseo-password"\' 2>/dev/null | tr -d \'[:space:]\')"',
+        '  [ -n "$PASSWORD" ] || fail "Could not read the Paseo password from sprite \'$NAME\' — has it been provisioned?"',
+        '  log "Open Paseo in your browser: $URL"',
+        ...(sel.publicUrl ? [] : ['  echo "    (sign in with Fly.io first — org members only)"']),
+        '  echo "    On the welcome screen, click \\"Direct connection\\" and enter:"',
+        '  echo "      Host:     $HOST"',
+        '  echo "      Port:     443"',
+        '  echo "      SSL/TLS:  on"',
+        '  echo "      Password: $PASSWORD"',
+        '  log "On your phone: pair the Paseo mobile app (or app.paseo.sh) by running:"',
+        '  echo "    sprite exec -s $NAME -- paseo daemon pair"',
+        '  echo "    then scan the QR code and enter the same password."',
+        "}",
+        "",
         "# ── Preflight ──",
         'command -v sprite >/dev/null 2>&1 || fail "The sprite CLI is not installed. Run this first: curl https://sprites.dev/install.sh | bash"',
         'sprite list >/dev/null 2>&1 </dev/null || fail "You are not signed in. Run: sprite login  (opens your browser, one time per computer)"',
+        "",
+        `# ── Lost your connection details? Run: ./provision-${name}.sh info ──`,
+        'if [ "${1:-}" = "info" ]; then',
+        `  NAME="\${2:-${name}}"`,
+        '  sprite list | grep -qw "$NAME" || fail "No sprite named \'$NAME\' yet — run this script without \'info\' to create it."',
+        "  connection_info",
+        "  exit 0",
+        "fi",
         "",
         "# ── Create sprite ──",
         'if sprite list | grep -qw "$NAME"; then log "Sprite \'$NAME\' exists, reusing"; else log "Creating \'$NAME\'"; sprite create --skip-console "$NAME"; fi',
@@ -565,21 +643,9 @@
       );
 
       p("# ── Done ──",
-        'log "Sprite \'$NAME\' provisioned."');
-      if (sel.publicUrl) {
-        p('log "Open Paseo in your browser: $URL"');
-      } else {
-        p('log "Open Paseo in your browser: $URL"',
-          'echo "    (sign in with Fly.io first — org members only)"');
-      }
-      p('echo "    On the welcome screen, click \\"Direct connection\\" and enter:"',
-        'echo "      Host:     $HOST"',
-        'echo "      Port:     443"',
-        'echo "      SSL/TLS:  on"',
-        'echo "      Password: $PASSWORD"');
-      p('log "On your phone: pair the Paseo mobile app (or app.paseo.sh) by running:"',
-        'echo "    sprite exec -s $NAME -- paseo daemon pair"',
-        'echo "    then scan the QR code and enter the same password."');
+        'log "Sprite \'$NAME\' provisioned."',
+        "connection_info",
+        'log "Lost these details later? Rerun this script with: ./provision-' + name + '.sh info"');
       if (logins.length) {
         p('log "One-time logins — run: sprite console -s $NAME, then:"');
         logins.forEach((cmd) => p(`echo "    ${cmd}"`));
@@ -651,6 +717,8 @@
         "   Paseo app (or open the printed link), then enter the same password.",
         `6. One-time agent sign-ins: \`sprite console -s ${name}\`, then run each login command the script`,
         "   printed at the end (e.g. `claude`), and set my git name and email.",
+        `7. If I ever lose the connection details, \`./provision-${name}.sh info\` prints them again without`,
+        "   reinstalling anything.",
         "",
         "If any command errors, show me the exact error and help me fix it before moving on.",
         "",
