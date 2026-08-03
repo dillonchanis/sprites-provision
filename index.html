@@ -402,10 +402,35 @@
           </p>
         </div>
         <div>
+          <h3>Why doesn't Paseo see my folder or repo?</h3>
+          <p>
+            Paseo runs agents in registered <strong>workspaces</strong>, not in arbitrary directories. In
+            <code>sprite console -s &lt;name&gt;</code>, clone a GitHub repo as a workspace with
+            <code>paseo clone owner/repo</code>, or register an existing folder with
+            <code>paseo workspace create --path ~/myfolder</code>. It then appears when you start a new agent.
+          </p>
+        </div>
+        <div>
           <h3>I lost my connection details.</h3>
           <p>
             Run <code>./provision-&lt;name&gt;.sh info</code> — it reprints the Paseo link, host, port, password,
             and the phone-pairing command in seconds, without reinstalling anything.
+          </p>
+        </div>
+        <div>
+          <h3>What does it cost?</h3>
+          <p>
+            Sprites bill only for actual usage while running — roughly $0.07 per CPU-hour plus $0.044 per GB-hour
+            of memory; storage while paused is pennies. Because Paseo runs as an always-on service (so your phone
+            connects instantly), expect roughly $15–35/month per sprite, plus whatever your agents actively use.
+          </p>
+        </div>
+        <div>
+          <h3>Can I turn it off to save money?</h3>
+          <p>
+            Yes: <code>./provision-&lt;name&gt;.sh off</code> stops Paseo so the sprite naps at near-zero cost;
+            <code>./provision-&lt;name&gt;.sh on</code> wakes it again in a couple of seconds. Schedule both with
+            cron on your computer to keep nights free — e.g. <code>off</code> at midnight, <code>on</code> at 7am.
           </p>
         </div>
         <div>
@@ -580,13 +605,24 @@
         'command -v sprite >/dev/null 2>&1 || fail "The sprite CLI is not installed. Run this first: curl https://sprites.dev/install.sh | bash"',
         'sprite list >/dev/null 2>&1 </dev/null || fail "You are not signed in. Run: sprite login  (opens your browser, one time per computer)"',
         "",
-        `# ── Lost your connection details? Run: ./provision-${name}.sh info ──`,
-        'if [ "${1:-}" = "info" ]; then',
-        `  NAME="\${2:-${name}}"`,
-        '  sprite list | grep -qw "$NAME" || fail "No sprite named \'$NAME\' yet — run this script without \'info\' to create it."',
-        "  connection_info",
-        "  exit 0",
-        "fi",
+        `# ── Helper modes: ./provision-${name}.sh info | on | off ──`,
+        "# info: reprint connection details   on: wake + start Paseo   off: stop Paseo so the sprite naps (near-zero cost)",
+        'case "${1:-}" in',
+        "  info|on|off)",
+        `    MODE="$1"; NAME="\${2:-${name}}"`,
+        '    sprite list | grep -qw "$NAME" || fail "No sprite named \'$NAME\' yet — run this script without arguments to create it."',
+        '    case "$MODE" in',
+        "      info) connection_info ;;",
+        '      on)   sprite exec -s "$NAME" -- sprite-env services start paseo >/dev/null 2>&1 || true',
+        '            sprite exec -s "$NAME" -- sprite-env services get paseo 2>/dev/null | grep -q \'"status":"running"\' || fail "Paseo did not start — rerun this script without arguments to reprovision."',
+        '            log "Sprite \'$NAME\' is awake — Paseo is running and your devices can connect." ;;',
+        '      off)  sprite exec -s "$NAME" -- sprite-env services stop paseo >/dev/null 2>&1 || true',
+        '            log "Paseo stopped — sprite \'$NAME\' will nap (near-zero cost) within a few minutes."',
+        `            log "Wake it back up with: ./provision-${name}.sh on" ;;`,
+        "    esac",
+        "    exit 0",
+        "    ;;",
+        "esac",
         "",
         "# ── Create sprite ──",
         'if sprite list | grep -qw "$NAME"; then log "Sprite \'$NAME\' exists, reusing"; else log "Creating \'$NAME\'"; sprite create --skip-console "$NAME"; fi',
@@ -627,6 +663,8 @@
         'URL="$(sprite info -s "$NAME" 2>/dev/null | awk \'$1=="URL:"{print $2}\')"',
         'HOST="${URL#https://}"; HOST="${HOST%%/*}"',
         'sprite exec -s "$NAME" -- bash -c \'[ -f "$HOME/.paseo-password" ] || { openssl rand -hex 24 > "$HOME/.paseo-password"; chmod 600 "$HOME/.paseo-password"; }\'',
+        "# Let the paseo CLI authenticate automatically in console sessions",
+        `sprite exec -s "$NAME" -- bash -c "grep -q PASEO_PASSWORD \\$HOME/.bashrc 2>/dev/null || echo 'export PASEO_PASSWORD=\\"\\$(cat \\"\\$HOME/.paseo-password\\" 2>/dev/null)\\"' >> \\$HOME/.bashrc"`,
         'PASSWORD="$(sprite exec -s "$NAME" -- bash -c \'cat "$HOME/.paseo-password"\' | tr -d \'[:space:]\')"',
         'sprite exec -s "$NAME" -- bash -c "',
         "  PASEO_BIN=\\$(command -v paseo)",
@@ -634,7 +672,7 @@
         "  sprite-env services delete paseo >/dev/null 2>&1 || true",
         "  sprite-env services create paseo \\",
         "    --cmd \\\"\\$PASEO_BIN\\\" \\",
-        "    --args 'daemon,start,--web-ui,--listen,0.0.0.0:6767' \\",
+        "    --args 'daemon,start,--foreground,--web-ui,--listen,0.0.0.0:6767' \\",
         '    --env \\"PASEO_PASSWORD=$PASSWORD,PASEO_HOSTNAMES=$HOST,PASEO_TRUSTED_PROXIES=true\\" \\',
         "    --http-port 6767",
         '"',
@@ -722,6 +760,8 @@
         "   printed at the end (e.g. `claude`), and set my git name and email.",
         `7. If I ever lose the connection details, \`./provision-${name}.sh info\` prints them again without`,
         "   reinstalling anything.",
+        "8. To give agents something to work on, I register a workspace inside the console: `paseo clone",
+        "   owner/repo` for a GitHub repo, or `paseo workspace create --path ~/myfolder` for an existing folder.",
         "",
         "If any command errors, show me the exact error and help me fix it before moving on.",
         "",
